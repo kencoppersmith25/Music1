@@ -1,28 +1,26 @@
 package com.example.music1
 
+import kotlin.String
+
 class ModeFactory {
 
     fun buildModeFromTag(
         name: String,
-        tag: String,
-        shuffle: Boolean = false
+        stations: List<Station>
     ): Mode {
         return Mode(
             name = name,
-            includeTags = listOf(tag),
-            shuffle = shuffle
+            stations = stations
         )
     }
 
     fun buildModeFromTags(
         name: String,
-        tags: List<String>,
-        shuffle: Boolean = false
+        stations: List<Station>,
     ): Mode {
         return Mode(
             name = name,
-            includeTags = tags,
-            shuffle = shuffle
+            stations = stations
         )
     }
 }

@@ -32,18 +32,8 @@ class RadioController(
         player.prepare()
         player.play()
     }
-
-    private fun stationsForCurrentMode(): List<Station> {
-        return catalog.stations.filter { station ->
-            currentMode.includeTags.any { tag ->
-                station.tags.any { stationTag ->
-                    stationTag.equals(tag, ignoreCase = true)
-                }
-            }
-        }
-    }
     val currentStation: Station
-        get() = stationsForCurrentMode()[stationIndex]
+        get() = currentMode.stations[stationIndex]
 
     init {
         // Add listener ONCE (prevents stacking listeners)
@@ -55,15 +45,23 @@ class RadioController(
     }
 
     fun nextStation() {
-        val stations = stationsForCurrentMode()
+        val stations = currentMode.stations
         if (stations.isEmpty()) return
         stationIndex = (stationIndex + 1) % stations.size
+        Log.e("kencheck","next station hit - index: $stationIndex  name: ${currentStation.name}")
+        play()
+    }
+    fun nextRandomStation() {
+        val stations = currentMode.stations
+        if (stations.size <= 1) return
+        var step = (1..(stations.size-1)).random()
+        stationIndex = (stationIndex + step) % stations.size
         Log.e("kencheck", "next station hit - index: ${stationIndex}  name: ${currentStation.name}")
         play()
     }
 
     fun previousStation() {
-        val stations = stationsForCurrentMode()
+        val stations = currentMode.stations
         if (stations.isEmpty()) return
         stationIndex = (stationIndex - 1 + stations.size) % stations.size
         Log.e("kencheck", "previous station hit - index: ${stationIndex}  name: ${currentStation.name}")
@@ -85,7 +83,7 @@ class RadioController(
     }
 
     fun play() {
-        val stations = stationsForCurrentMode()
+        val stations = currentMode.stations
         if (stations.isEmpty()) {
             Log.e("kencheck", "play - No stations found for mode ${currentMode.name}")
             return
@@ -93,7 +91,7 @@ class RadioController(
         val station = stations[stationIndex]
         currentModeName = currentMode.name
         currentStationName = station.name
-        Log.d("kencheck","play - Mode=${currentMode.name} tags=${currentMode.includeTags} stationsFound=${stationsForCurrentMode().size}")
+        Log.d("kencheck","play - Mode=${currentMode.name} stationsFound=${currentMode.stations.size}")
         Log.d("kencheck", "play - playing current mode/station :  stationindex: ${stationIndex}  stationname: ${currentStation.name} modeindex: ${modeIndex}  modename: ${currentModeName}")
         val item = MediaItem.fromUri(station.streamUrl)
         player.setMediaItem(item)

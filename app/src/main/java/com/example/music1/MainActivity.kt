@@ -87,6 +87,10 @@ class MainActivity : ComponentActivity() {
                             Button(onClick = { controller.nextStation() }) {
                                 Text("Next Station")
                             }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Button(onClick = { controller.nextRandomStation() }) {
+                                Text("Random Station")
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
