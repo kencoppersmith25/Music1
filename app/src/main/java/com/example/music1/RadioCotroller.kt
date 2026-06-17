@@ -14,10 +14,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.material3.Text
 import android.content.Context
 import androidx.media3.session.MediaSession
+import android.support.v4.media.session.MediaSessionCompat
 import android.content.Intent
 import android.view.KeyEvent
 import android.os.Handler
 import android.os.Looper
+import com.example.music1.RadioCommand
 
 class RadioController(
     private val context: Context,
@@ -46,6 +48,10 @@ class RadioController(
     private val _bluetoothEventCount = MutableStateFlow(0)
     val bluetoothEventCount: StateFlow<Int> = _bluetoothEventCount.asStateFlow()
     var maxRecoveryAttempts = 3
+    private lateinit var mediaSession: MediaSession
+    private var lastEventTime = 0L
+
+
     init{
         if(catalog.modes.isEmpty()){
             _modeIndex.value=0
@@ -75,6 +81,16 @@ class RadioController(
                 _playbackStatus.value = "Error"
             }
         })
+        mediaSession = MediaSession.Builder(context, player)
+            .build()
+    }
+    fun onCommand(command: RadioCommand) {
+        when (command) {
+            RadioCommand.NEXT_STATION -> nextStation()
+            RadioCommand.PREVIOUS_STATION -> prevStation()
+            RadioCommand.TOGGLE_PLAYBACK -> togglePlayStop()
+            RadioCommand.UNKNOWN -> { }
+        }
     }
     val currentMode: Mode
         get() = catalog.modes.getOrElse(_modeIndex.value){
@@ -122,7 +138,14 @@ class RadioController(
             .putInt(KEY_STATION,_stationIndex.value)
             .apply()
     }
-    fun simulateStreamFailure(){
+    fun togglePlayStop(){
+        if (_playbackStatus.value in listOf("idle","Stopped")) {
+            play()
+        } else {
+            stop()
+        }
+    }
+   fun simulateStreamFailure(){
         Log.e("kencheck","SIMULATED STREAM FAILURE")
         _playbackStatus.value="Error"
         recoverStream()
@@ -205,6 +228,7 @@ class RadioController(
     fun exit(){
         player.stop()
         player.release()
+        mediaSession.release()
     }
     fun stop(){
         player.stop()

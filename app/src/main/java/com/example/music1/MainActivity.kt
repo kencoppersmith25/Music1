@@ -20,7 +20,7 @@ import androidx.core.content.ContextCompat
 import com.example.music1.ui.theme.UserScreen
 import android.util.Log
 import androidx.media3.exoplayer.ExoPlayer
-
+import android.view.KeyEvent
 
 class MainActivity : ComponentActivity() {
     private lateinit var controller: RadioController
@@ -28,8 +28,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val player = ExoPlayer.Builder(this).build()
         controller = RadioController(this, player, RadioCatalog)
+        Log.e("kencheck", "**************APP STARTED pid=${android.os.Process.myPid()}")
         setContent {
             UserScreen(controller)
         }
+    }
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val keyCode = event.keyCode
+        Log.d("BT", "keyCode=$keyCode")
+        RadioController.onCommand(
+            mapKeyCodeToCommand(keyCode)
+        )
+        return super.dispatchKeyEvent(event)
     }
 }
