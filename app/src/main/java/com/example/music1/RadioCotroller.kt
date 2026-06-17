@@ -16,10 +16,15 @@ import android.content.Context
 import androidx.media3.session.MediaSession
 import android.support.v4.media.session.MediaSessionCompat
 import android.content.Intent
+import android.os.Bundle
 import android.view.KeyEvent
 import android.os.Handler
 import android.os.Looper
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.ui.unit.dp
 import com.example.music1.RadioCommand
+import com.example.music1.ui.theme.UserScreen
 
 class RadioController(
     private val context: Context,
@@ -52,36 +57,68 @@ class RadioController(
     private var lastEventTime = 0L
 
 
-    init{
-        if(catalog.modes.isEmpty()){
-            _modeIndex.value=0
-            _stationIndex.value=0
-            _currentModeName.value=""
-            _currentStationName.value=""
-        }else{
-            val safeModeIndex=prefs.getInt(KEY_MODE,0).coerceIn(0,catalog.modes.lastIndex)
-            _modeIndex.value=safeModeIndex
-            val mode=catalog.modes[safeModeIndex]
-            val safeStationIndex=prefs.getInt(KEY_STATION,0)
-                .coerceIn(0,mode.stations.lastIndex)
-            _stationIndex.value=safeStationIndex
-            _currentModeName.value=mode.name
-            _currentStationName.value=mode.stations[safeStationIndex].name
+    init {
+        if (catalog.modes.isEmpty()) {
+            _modeIndex.value = 0
+            _stationIndex.value = 0
+            _currentModeName.value = ""
+            _currentStationName.value = ""
+        } else {
+            val safeModeIndex = prefs.getInt(KEY_MODE, 0).coerceIn(0, catalog.modes.lastIndex)
+            _modeIndex.value = safeModeIndex
+            val mode = catalog.modes[safeModeIndex]
+            val safeStationIndex = prefs.getInt(KEY_STATION, 0)
+                .coerceIn(0, mode.stations.lastIndex)
+            _stationIndex.value = safeStationIndex
+            _currentModeName.value = mode.name
+            _currentStationName.value = mode.stations[safeStationIndex].name
+        }
+
+        fun mapKeyCodeToCommand(keyCode: Int): RadioCommand {
+            Log.d("kencheck", "keyCode=$keyCode")
+            return when (keyCode) {
+                // modern Android media keys
+                KeyEvent.KEYCODE_MEDIA_NEXT -> RadioCommand.NEXT_STATION
+                KeyEvent.KEYCODE_MEDIA_PREVIOUS -> RadioCommand.PREVIOUS_STATION
+                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+                KeyEvent.KEYCODE_HEADSETHOOK -> RadioCommand.TOGGLE_PLAYBACK
+                // YOUR EARBUD RAW CODES (important)
+                87 -> RadioCommand.NEXT_STATION
+                88 -> RadioCommand.PREVIOUS_STATION
+                126, 127 -> RadioCommand.TOGGLE_PLAYBACK
+
+                else -> RadioCommand.UNKNOWN
+            }
         }
         player.addListener(object : Player.Listener {
-            override fun onPlaybackStateChanged(state: Int) {
-                _playbackStatus.value = when(state) {
-                    Player.STATE_BUFFERING -> "Buffering"
-                    Player.STATE_READY -> "Playing"
-                    Player.STATE_ENDED -> "Idle"
-                    else -> "Idle"
-                }
-            }
+
             override fun onPlayerError(error: PlaybackException) {
                 _playbackStatus.value = "Error"
             }
+
         })
         mediaSession = MediaSession.Builder(context, player)
+            .setCallback(object : MediaSession.Callback {
+
+                override fun onMediaButtonEvent(
+                    session: MediaSession,
+                    controller: MediaSession.ControllerInfo,
+                    intent: Intent
+                ): Boolean {
+
+                    val event = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
+
+                    Log.d("kencheck", "MEDIA BUTTON EVENT: $event")
+
+                    if (event != null && event.action == KeyEvent.ACTION_DOWN) {
+                        val command = mapKeyCodeToCommand(event.keyCode)
+                        Log.e("kencheck", "MEDIA BUTTON CALLBACK ENTERED")
+                        onCommand(command)
+                    }
+
+                    return true
+                }
+            })
             .build()
     }
     fun onCommand(command: RadioCommand) {
@@ -89,7 +126,7 @@ class RadioController(
             RadioCommand.NEXT_STATION -> nextStation()
             RadioCommand.PREVIOUS_STATION -> prevStation()
             RadioCommand.TOGGLE_PLAYBACK -> togglePlayStop()
-            RadioCommand.UNKNOWN -> { }
+            RadioCommand.UNKNOWN -> {}
         }
     }
     val currentMode: Mode

@@ -33,12 +33,15 @@ class MainActivity : ComponentActivity() {
             UserScreen(controller)
         }
     }
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        val keyCode = event.keyCode
-        Log.d("BT", "keyCode=$keyCode")
-        RadioController.onCommand(
-            mapKeyCodeToCommand(keyCode)
-        )
-        return super.dispatchKeyEvent(event)
-    }
+//    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+//        val keyCode = event.keyCode
+//        Log.d("kencheck", "keyCode=$keyCode")
+//        if (::controller.isInitialized && event.action == KeyEvent.ACTION_DOWN) {
+//            controller.onCommand(
+//                controller.mapKeyCodeToCommand(keyCode)
+//            )
+//            )
+//        }
+//        return super.dispatchKeyEvent(event)
+//    }
 }
