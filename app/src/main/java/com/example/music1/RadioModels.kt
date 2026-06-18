@@ -1,7 +1,8 @@
 package com.example.music1
 data class Station(
     val name: String,
-    val streamUrl: String
+    val streamUrl: String,
+    val genre: String
 )
 data class Mode(
     val name: String,

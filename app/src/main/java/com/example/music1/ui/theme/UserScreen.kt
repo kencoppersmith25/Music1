@@ -32,6 +32,7 @@ fun UserScreen(controller: RadioController) {
     val mode by controller.currentModeName.collectAsState()
     val station by controller.currentStationName.collectAsState()
     val status by controller.playbackStatus.collectAsState()
+    val genre by controller.currentGenreName.collectAsState()
     // 🎛 Controller (your core logic stays unchanged)
     val btManager: BluetoothManager = remember {
         BluetoothManager(context)
@@ -60,7 +61,7 @@ fun UserScreen(controller: RadioController) {
                 )
                 Text("Status: $status")
                 Text("Mode: $mode")
-                Text("Station: $station")
+                Text("Station/Genre: $station($genre)")
                 Row {
                     Button(onClick = { controller.previousMode() }) {
                         Text("Prev Mode")

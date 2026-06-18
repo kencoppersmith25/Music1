@@ -5,19 +5,19 @@ object RadioCatalog {
     val modes = listOf(
         Mode(
             name = "Tone Test mode 1", stations = listOf(
-                Station("Sine 200Hz 1-1","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"),
-                Station("Sine 400Hz 1-2","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"),
-                Station("Sine 600Hz 1-3","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"))),
+                Station("Sine 200Hz 1-1","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3","tones-1"),
+                Station("Sine 400Hz 1-2","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3","tones-2"),
+                Station("Sine 600Hz 1-3","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3","tones-3"))),
         Mode(
             name = "Music Test mode 2", stations = listOf(
-                Station("Track A - Calm 2-1","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"),
-                Station("Track B - Beat 2-2","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"),
-                Station("Track C - Fast 2-3","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"))),
+                Station("Track A - Calm 2-1","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3","r&b-1"),
+                Station("Track B - Beat 2-2","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3","r&b-2"),
+                Station("Track C - Fast 2-3","https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3","r&b-3"))),
         Mode(
             name = "Voice Test mode 3", stations = listOf(
-                Station("Voice 3-1", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3"),
-                Station("Voice 3-2", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"),
-                Station("Voice 3-3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3")
+                Station("Voice 3-1", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3","classical"),
+                Station("Voice 3-2", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3","rock"),
+                Station("Voice 3-3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3","blues")
             )
         )
     )

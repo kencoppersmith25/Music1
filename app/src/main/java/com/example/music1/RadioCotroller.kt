@@ -42,6 +42,8 @@ class RadioController(
     val currentModeName: StateFlow<String> = _currentModeName.asStateFlow()
     private val _currentStationName = MutableStateFlow("")
     val currentStationName: StateFlow<String> = _currentStationName.asStateFlow()
+    private val _currentGenreName = MutableStateFlow("")
+    val currentGenreName: StateFlow<String> = _currentGenreName.asStateFlow()
     private val _playbackStatus = MutableStateFlow("Stopped")
     val playbackStatus: StateFlow<String> = _playbackStatus.asStateFlow()
     private val _isRecovering = MutableStateFlow(false)
@@ -52,6 +54,8 @@ class RadioController(
     val lastBluetoothEvent: StateFlow<String> = _lastBluetoothEvent.asStateFlow()
     private val _bluetoothEventCount = MutableStateFlow(0)
     val bluetoothEventCount: StateFlow<Int> = _bluetoothEventCount.asStateFlow()
+    private val _activeGenre = MutableStateFlow<String?>(null)
+    val activeGenre: StateFlow<String?> = _activeGenre.asStateFlow()
     var maxRecoveryAttempts = 3
     private lateinit var mediaSession: MediaSession
     private var lastEventTime = 0L
@@ -63,6 +67,8 @@ class RadioController(
             _stationIndex.value = 0
             _currentModeName.value = ""
             _currentStationName.value = ""
+            _currentGenreName.value = ""
+
         } else {
             val safeModeIndex = prefs.getInt(KEY_MODE, 0).coerceIn(0, catalog.modes.lastIndex)
             _modeIndex.value = safeModeIndex
@@ -72,6 +78,8 @@ class RadioController(
             _stationIndex.value = safeStationIndex
             _currentModeName.value = mode.name
             _currentStationName.value = mode.stations[safeStationIndex].name
+            _currentGenreName.value = mode.stations[safeStationIndex].genre
+
         }
 
         fun mapKeyCodeToCommand(keyCode: Int): RadioCommand {
@@ -160,6 +168,7 @@ class RadioController(
         val station = mode.stations[finalIndex]
         _stationIndex.value = finalIndex
         _currentStationName.value = station.name
+        _currentGenreName.value = station.genre
         saveState()
         playStation(station)
     }
@@ -168,6 +177,9 @@ class RadioController(
     }
     fun setStation(station:Station){
         _currentStationName.value=station.name
+    }
+    fun setGenre(station:Station){
+        _currentGenreName.value=station.genre
     }
     private fun saveState(){
         prefs.edit()
@@ -228,6 +240,7 @@ class RadioController(
         _stationIndex.value = 0
         _currentModeName.value = mode.name
         _currentStationName.value = station.name
+        _currentGenreName.value = station.genre
         saveState()
         playStation(station)
     }
@@ -240,6 +253,7 @@ class RadioController(
         _stationIndex.value = 0
         _currentModeName.value = mode.name
         _currentStationName.value = station.name
+        _currentGenreName.value = station.genre
         saveState()
         playStation(station)
     }
@@ -270,5 +284,21 @@ class RadioController(
     fun stop(){
         player.stop()
         _playbackStatus.value = "idle"
+    }
+    /////////////////////////////////////////////////////////
+    ////////         new station stuff             //////////
+    // ///////////////////////////////////////////////////////
+
+    private fun filteredStations(): List<Station> {
+        val genre = _activeGenre.value
+        val allStations = catalog.modes.flatMap { it.stations }
+        return if (genre == null) {
+            allStations
+        } else {
+            allStations.filter { it.genre == genre }
+        }
+    }
+    fun clearGenreFilter() {
+        _activeGenre.value = null
     }
 }
