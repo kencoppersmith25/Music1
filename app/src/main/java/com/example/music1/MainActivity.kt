@@ -27,7 +27,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val player = ExoPlayer.Builder(this).build()
-        controller = RadioController(this, player, RadioCatalog)
+        val musicRepository = MusicRepository(this)
+        controller = RadioController(this,player)
         Log.e("kencheck", "**************APP STARTED pid=${android.os.Process.myPid()}")
         setContent {
             UserScreen(controller)

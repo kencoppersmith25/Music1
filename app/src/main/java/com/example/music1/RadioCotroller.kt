@@ -24,13 +24,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.ui.unit.dp
 import com.example.music1.RadioCommand
+import com.example.music1.RadioCatalog
 import com.example.music1.ui.theme.UserScreen
 
 class RadioController(
     private val context: Context,
-    private val player: ExoPlayer,
-    private val catalog: RadioCatalog
-){
+    private val player: ExoPlayer)
+{
+    private val catalog = RadioCatalog
+    private val musicRepository = MusicRepository(context)
     private val KEY_MODE = "modeIndex"
     private val KEY_STATION = "stationIndex"
     private val prefs = context.getSharedPreferences("radio_state", Context.MODE_PRIVATE)
@@ -42,8 +44,6 @@ class RadioController(
     val currentModeName: StateFlow<String> = _currentModeName.asStateFlow()
     private val _currentStationName = MutableStateFlow("")
     val currentStationName: StateFlow<String> = _currentStationName.asStateFlow()
-    private val _currentGenreName = MutableStateFlow("")
-    val currentGenreName: StateFlow<String> = _currentGenreName.asStateFlow()
     private val _playbackStatus = MutableStateFlow("Stopped")
     val playbackStatus: StateFlow<String> = _playbackStatus.asStateFlow()
     private val _isRecovering = MutableStateFlow(false)
@@ -54,12 +54,13 @@ class RadioController(
     val lastBluetoothEvent: StateFlow<String> = _lastBluetoothEvent.asStateFlow()
     private val _bluetoothEventCount = MutableStateFlow(0)
     val bluetoothEventCount: StateFlow<Int> = _bluetoothEventCount.asStateFlow()
-    private val _activeGenre = MutableStateFlow<String?>(null)
-    val activeGenre: StateFlow<String?> = _activeGenre.asStateFlow()
     var maxRecoveryAttempts = 3
     private lateinit var mediaSession: MediaSession
+    private val _activeMode = mutableStateOf<String?>(null)
     private var lastEventTime = 0L
-
+    private val likedStations = mutableSetOf<String>()
+    val results = RadioCatalog.search(query)
+    val grouped = suggestCategories(query, results)
 
     init {
         if (catalog.modes.isEmpty()) {
@@ -67,7 +68,6 @@ class RadioController(
             _stationIndex.value = 0
             _currentModeName.value = ""
             _currentStationName.value = ""
-            _currentGenreName.value = ""
 
         } else {
             val safeModeIndex = prefs.getInt(KEY_MODE, 0).coerceIn(0, catalog.modes.lastIndex)
@@ -78,7 +78,6 @@ class RadioController(
             _stationIndex.value = safeStationIndex
             _currentModeName.value = mode.name
             _currentStationName.value = mode.stations[safeStationIndex].name
-            _currentGenreName.value = mode.stations[safeStationIndex].genre
 
         }
 
@@ -113,21 +112,48 @@ class RadioController(
                     controller: MediaSession.ControllerInfo,
                     intent: Intent
                 ): Boolean {
-
                     val event = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT)
-
                     Log.d("kencheck", "MEDIA BUTTON EVENT: $event")
-
                     if (event != null && event.action == KeyEvent.ACTION_DOWN) {
                         val command = mapKeyCodeToCommand(event.keyCode)
                         Log.e("kencheck", "MEDIA BUTTON CALLBACK ENTERED")
                         onCommand(command)
                     }
-
                     return true
                 }
             })
             .build()
+    }
+    fun suggestCategories(query: String, stations: List<Station>): Map<RadioCategory, List<Station>> {
+        val normalized = query.lowercase()
+        val result = mutableMapOf<RadioCategory, MutableList<Station>>()
+        for (cat in categories) {
+            val matches = stations.filter { station ->
+                val text = (station.name + " " + station.tags.joinToString(" ")).lowercase()
+                val keywordMatch = cat.keywords.any { it in text }
+                val queryMatch = text.contains(normalized)
+                keywordMatch || queryMatch
+            }
+            if (matches.isNotEmpty()) {
+                result[cat] = matches.toMutableList()
+            }
+        }
+
+        return result
+    }
+    fun toggleLike(stationId: String) {
+        if (likedStations.contains(stationId)) {
+            likedStations.remove(stationId)
+        } else {
+            likedStations.add(stationId)
+        }
+    }
+    fun isLiked(stationId: String): Boolean {
+        return likedStations.contains(stationId)
+    }
+    fun scanDeviceMusic() {
+        val stations = musicRepository.scanDeviceMusic()
+        Log.d("MusicScan", "Found ${stations.size} songs")
     }
     fun onCommand(command: RadioCommand) {
         when (command) {
@@ -152,7 +178,7 @@ class RadioController(
         updateStationIndex(_stationIndex.value-1)
     }
     fun Station.toMediaItem():MediaItem{
-        return MediaItem.fromUri(this.streamUrl)
+        return MediaItem.fromUri(this.location)
     }
     fun nextRandomStation(){
         val stations=currentMode.stations
@@ -168,7 +194,6 @@ class RadioController(
         val station = mode.stations[finalIndex]
         _stationIndex.value = finalIndex
         _currentStationName.value = station.name
-        _currentGenreName.value = station.genre
         saveState()
         playStation(station)
     }
@@ -177,9 +202,6 @@ class RadioController(
     }
     fun setStation(station:Station){
         _currentStationName.value=station.name
-    }
-    fun setGenre(station:Station){
-        _currentGenreName.value=station.genre
     }
     private fun saveState(){
         prefs.edit()
@@ -217,7 +239,7 @@ class RadioController(
         val delay=1000L*_recoveryAttempts.value
         Handler(Looper.getMainLooper()).postDelayed({
             try{
-                val item=MediaItem.fromUri(currentStation.streamUrl)
+                val item=MediaItem.fromUri(currentStation.location)
                 player.setMediaItem(item)
                 player.prepare()
                 player.playWhenReady=true
@@ -240,7 +262,6 @@ class RadioController(
         _stationIndex.value = 0
         _currentModeName.value = mode.name
         _currentStationName.value = station.name
-        _currentGenreName.value = station.genre
         saveState()
         playStation(station)
     }
@@ -253,7 +274,6 @@ class RadioController(
         _stationIndex.value = 0
         _currentModeName.value = mode.name
         _currentStationName.value = station.name
-        _currentGenreName.value = station.genre
         saveState()
         playStation(station)
     }
@@ -261,7 +281,7 @@ class RadioController(
         val stations=currentMode.stations
         if(stations.isEmpty())return
         val station=currentStation
-        val item=MediaItem.fromUri(station.streamUrl)
+        val item=MediaItem.fromUri(station.location)
         player.setMediaItem(item)
         player.prepare()
         player.playWhenReady=true
@@ -269,7 +289,7 @@ class RadioController(
         _playbackStatus.value = "Playing"
     }
     private fun playStation(station: Station) {
-        val item = MediaItem.fromUri(station.streamUrl)
+        val item = MediaItem.fromUri(station.location)
         player.setMediaItem(item)
         player.prepare()
         player.playWhenReady = true
@@ -288,17 +308,21 @@ class RadioController(
     /////////////////////////////////////////////////////////
     ////////         new station stuff             //////////
     // ///////////////////////////////////////////////////////
-
     private fun filteredStations(): List<Station> {
-        val genre = _activeGenre.value
         val allStations = catalog.modes.flatMap { it.stations }
-        return if (genre == null) {
+        return if (_activeMode.value == null) {
             allStations
         } else {
-            allStations.filter { it.genre == genre }
+            catalog.modes
+                .firstOrNull { it.name == _activeMode.value }
+                ?.stations
+                ?: emptyList()
         }
     }
-    fun clearGenreFilter() {
-        _activeGenre.value = null
+    fun setModeFilter(mode: String) {
+        _activeMode.value = mode
+    }
+    fun clearModeFilter() {
+        _activeMode.value = null
     }
 }

@@ -32,7 +32,6 @@ fun UserScreen(controller: RadioController) {
     val mode by controller.currentModeName.collectAsState()
     val station by controller.currentStationName.collectAsState()
     val status by controller.playbackStatus.collectAsState()
-    val genre by controller.currentGenreName.collectAsState()
     // 🎛 Controller (your core logic stays unchanged)
     val btManager: BluetoothManager = remember {
         BluetoothManager(context)
@@ -61,7 +60,7 @@ fun UserScreen(controller: RadioController) {
                 )
                 Text("Status: $status")
                 Text("Mode: $mode")
-                Text("Station/Genre: $station($genre)")
+                Text("Station: $station")
                 Row {
                     Button(onClick = { controller.previousMode() }) {
                         Text("Prev Mode")
@@ -91,9 +90,34 @@ fun UserScreen(controller: RadioController) {
                     Button(onClick = { controller.play() }) {
                         Text("Play")
                     }
+//                    Spacer(modifier = Modifier.width(16.dp))
+//                    Button(onClick = { controller.playCurrentStation() }) {
+//                        Text("Play Stream")
+//                    }
                     Spacer(modifier = Modifier.width(16.dp))
                     Button(onClick = { controller.stop() }) {
                         Text("Stop")
+                    }
+                }
+//                Row {
+//                    Button(onClick = { mediaController.scanDeviceMusic() }) {
+//                        Text("err-playback drop")
+//                    }
+//                    Spacer(modifier = Modifier.width(16.dp))
+//                    Button(onClick = { mediaController.simulateStreamFailure() }) {
+//                        Text("err-simulate drop")
+//                    }
+                // -------------------
+                // EXIT
+                // -------------------
+                Row {
+                    Button(
+                        onClick = {
+                            controller.exit()
+                            (context as? Activity)?.finish()
+                        }
+                    ) {
+                        Text("Exit")
                     }
                 }
                 Row {
@@ -105,17 +129,7 @@ fun UserScreen(controller: RadioController) {
                         Text("err-simulate drop")
                     }
                 }
-                // -------------------
-                // EXIT
-                // -------------------
-                Button(
-                    onClick = {
-                        controller.exit()
-                        (context as? Activity)?.finish()
-                    }
-                ) {
-                    Text("Exit")
-                }
+
             }
         }
     }

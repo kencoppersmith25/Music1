@@ -1,8 +1,10 @@
 package com.example.music1
+
 data class Station(
+    val id: Int,
     val name: String,
-    val streamUrl: String,
-    val genre: String
+    val type: SourceType,
+    val location: String // URL for streams
 )
 data class Mode(
     val name: String,
@@ -15,3 +17,10 @@ enum class RadioCommand {
     TOGGLE_PLAYBACK,
     UNKNOWN
 }
+enum class SourceType {
+    STREAM,
+    FOLDER,
+    PLAYLIST,
+    FILE
+}
+
